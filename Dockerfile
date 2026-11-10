@@ -5,7 +5,6 @@ ENV NODE_ENV=production \
     CODEX_HOME=/app/.codex
 
 WORKDIR /app
-RUN npm install --global @openai/codex@0.167.0
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY migrations ./migrations

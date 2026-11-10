@@ -20,6 +20,7 @@ Standalone Linear agent that interviews humans until an issue has a complete fun
 
 - Node.js `22.16.0`
 - npm `10.9.2`
+- Codex CLI `0.167.0` (pinned project dependency)
 
 Do not use a different Node major for installation or validation.
 
