@@ -8,5 +8,9 @@ test("encrypts credentials with authenticated encryption", () => {
   const encrypted = service.encrypt("secret-token");
   assert.notEqual(encrypted, "secret-token");
   assert.equal(service.decrypt(encrypted), "secret-token");
-  assert.throws(() => service.decrypt(`${encrypted.slice(0, -1)}x`));
+  const parts = encrypted.split(".");
+  const ciphertext = Buffer.from(parts[3], "base64url");
+  ciphertext[0] ^= 1;
+  parts[3] = ciphertext.toString("base64url");
+  assert.throws(() => service.decrypt(parts.join(".")));
 });
