@@ -6,7 +6,8 @@ import { createPool } from "../src/database.js";
 import { InstallationRepository, OAuthStateRepository, PgSessionStore, WebhookRepository } from "../src/repositories.js";
 
 test("persists encrypted installations, one-time OAuth state, sessions, and idempotent webhooks", { skip: !process.env.TEST_DATABASE_URL }, async () => {
-  const pool = createPool(process.env.TEST_DATABASE_URL);
+  const ssl = process.env.TEST_DATABASE_SSL_REJECT_UNAUTHORIZED === "false" ? { rejectUnauthorized: false } : undefined;
+  const pool = createPool(process.env.TEST_DATABASE_URL, ssl);
   const suffix = crypto.randomUUID();
   const organizationId = `org-${suffix}`;
   const sessionId = `session-${suffix}`;
