@@ -9,11 +9,12 @@ export class AnalystOrchestrator {
   }
 
   async handle(event) {
-    const { sessionId, action, input } = event;
+    const { sessionId, action, input, organizationId } = event;
+    await this.sessions.create?.(sessionId, organizationId);
     await this.linear.createActivity(sessionId, {
       type: "thought",
       body: action === "created" ? "Estoy revisando la solicitud y el contexto disponible." : "Estoy incorporando la nueva respuesta.",
-    }, { ephemeral: true });
+    }, { ephemeral: true, organizationId });
 
     try {
       let state = this.sessions.get(sessionId);
@@ -21,25 +22,26 @@ export class AnalystOrchestrator {
         const created = await this.analyst.start({ systemPrompt: ANALYST_SYSTEM_PROMPT, input });
         state = { threadId: created.threadId };
         this.sessions.set(sessionId, state);
-        await this.#publish(sessionId, created.output);
+        await this.#publish(sessionId, organizationId, created.output);
         return;
       }
 
       const continued = await this.analyst.continue({ threadId: state.threadId, input });
-      await this.#publish(sessionId, continued.output);
+      await this.#publish(sessionId, organizationId, continued.output);
     } catch (error) {
       this.logger.error(error);
       await this.linear.createActivity(sessionId, {
         type: "error",
         body: "No pude procesar esta ronda. El error quedó registrado sin exponer credenciales. Intenta nuevamente o avisa al responsable del Analista.",
-      });
+      }, { organizationId });
     }
   }
 
-  async #publish(sessionId, rawOutput) {
+  async #publish(sessionId, organizationId, rawOutput) {
     const result = parseAnalystOutput(rawOutput);
     const type = result.status === "needs_input" ? "elicitation" : "response";
-    await this.linear.createActivity(sessionId, { type, body: result.body });
+    await this.linear.createActivity(sessionId, { type, body: result.body }, { organizationId });
+    await this.sessions.setStatus?.(sessionId, result.status === "needs_input" ? "awaiting_input" : "complete");
   }
 }
 

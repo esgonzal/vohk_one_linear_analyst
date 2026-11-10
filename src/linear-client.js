@@ -7,16 +7,18 @@ mutation AgentActivityCreate($input: AgentActivityCreateInput!) {
 }`;
 
 export class LinearClient {
-  constructor({ accessToken, fetchImpl = fetch }) {
+  constructor({ accessToken, tokenProvider, fetchImpl = fetch }) {
     this.accessToken = accessToken;
+    this.tokenProvider = tokenProvider;
     this.fetchImpl = fetchImpl;
   }
 
-  async createActivity(agentSessionId, content, { ephemeral = false } = {}) {
+  async createActivity(agentSessionId, content, { ephemeral = false, organizationId } = {}) {
+    const accessToken = this.tokenProvider ? await this.tokenProvider(organizationId) : this.accessToken;
     const response = await this.fetchImpl("https://api.linear.app/graphql", {
       method: "POST",
       headers: {
-        authorization: `Bearer ${this.accessToken}`,
+        authorization: `Bearer ${accessToken}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({

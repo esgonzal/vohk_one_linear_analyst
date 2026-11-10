@@ -13,11 +13,11 @@ test("verifies a valid Linear signature", () => {
 
 test("parses created and prompted events", () => {
   assert.deepEqual(parseAgentEvent({
-    type: "AgentSessionEvent", action: "created", promptContext: "context", agentSession: { id: "s1" },
-  }), { action: "created", sessionId: "s1", input: "context" });
+    type: "AgentSessionEvent", action: "created", organizationId: "o1", promptContext: "context", agentSession: { id: "s1" },
+  }), { action: "created", sessionId: "s1", organizationId: "o1", input: "context" });
 
   assert.deepEqual(parseAgentEvent({
-    type: "AgentSessionEvent", action: "prompted", agentActivity: { body: "answer" }, agentSession: { id: "s1" },
-  }), { action: "prompted", sessionId: "s1", input: "answer" });
+    type: "AgentSessionEvent", action: "prompted", organizationId: "o1", agentActivity: { body: "answer" }, agentSession: { id: "s1" },
+  }), { action: "prompted", sessionId: "s1", organizationId: "o1", input: "answer" });
 });
 

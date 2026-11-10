@@ -19,6 +19,7 @@ export function parseAgentEvent(payload) {
     return {
       action: "created",
       sessionId,
+      organizationId: payload.organizationId,
       input: payload.promptContext ?? "",
     };
   }
@@ -26,6 +27,7 @@ export function parseAgentEvent(payload) {
   return {
     action: "prompted",
     sessionId,
+    organizationId: payload.organizationId,
     input: payload.agentActivity?.body ?? "",
   };
 }

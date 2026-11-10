@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    environment:
+      POSTGRES_DB: vohk_one_linear_analyst
+      POSTGRES_USER: analyst
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - analyst-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analyst -d vohk_one_linear_analyst"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  analyst:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://analyst:${POSTGRES_PASSWORD}@postgres:5432/vohk_one_linear_analyst
+      USE_EXISTING_CODEX_LOGIN: "false"
+    volumes:
+      - analyst-codex:/app/.codex
+      - analyst-data:/app/.data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8787:8787"
+    restart: unless-stopped
+
+volumes:
+  analyst-postgres:
+  analyst-codex:
+  analyst-data:

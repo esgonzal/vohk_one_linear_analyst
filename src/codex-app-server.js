@@ -3,14 +3,16 @@ import path from "node:path";
 import readline from "node:readline";
 
 export class CodexAppServerClient {
-  constructor({ command = "codex", model, cwd = process.cwd(), env = process.env }) {
+  constructor({ command = "codex", model, cwd = process.cwd(), env = process.env, tokenProvider = null }) {
     this.command = command;
     this.model = model;
     this.cwd = cwd;
+    this.tokenProvider = tokenProvider;
+    const home = env.HOME ?? env.USERPROFILE;
     this.env = {
       ...env,
-      ...(env.HOME ? {} : { HOME: env.USERPROFILE }),
-      ...(env.CODEX_HOME ? {} : { CODEX_HOME: path.join(env.USERPROFILE, ".codex") }),
+      ...(!env.HOME && home ? { HOME: home } : {}),
+      ...(!env.CODEX_HOME && home ? { CODEX_HOME: path.join(home, ".codex") } : {}),
     };
     this.sequence = 0;
     this.pending = new Map();
@@ -18,15 +20,28 @@ export class CodexAppServerClient {
   }
 
   async connect() {
-    if (this.process) return;
-    this.process = spawn(this.command, ["app-server"], {
-      env: this.env,
+    const token = this.tokenProvider ? await this.tokenProvider() : null;
+    if (this.process && (!token || token === this.activeToken)) return;
+    if (this.process) {
+      const previous = this.process;
+      await new Promise((resolve) => { previous.once("exit", resolve); previous.kill(); });
+      if (this.process === previous) this.process = null;
+    }
+    this.activeToken = token;
+    const args = ["app-server"];
+    if (token) args.push("-c", 'model_provider="openai_chatgpt_plan"', "-c", 'model_providers.openai_chatgpt_plan.name="ChatGPT plan"',
+      "-c", 'model_providers.openai_chatgpt_plan.base_url="https://api.openai.com/v1"', "-c", 'model_providers.openai_chatgpt_plan.env_key="ACCESS_TOKEN"',
+      "-c", 'model_providers.openai_chatgpt_plan.wire_api="responses"', "-c", 'model_providers.openai_chatgpt_plan.requires_openai_auth=false',
+      "-c", 'model_providers.openai_chatgpt_plan.supports_websockets=false');
+    const child = spawn(this.command, args, {
+      env: { ...this.env, ...(token ? { ACCESS_TOKEN: token } : {}) },
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
     });
-    this.process.stderr.on("data", (chunk) => process.stderr.write(chunk));
-    this.process.on("exit", (code) => this.#rejectAll(new Error(`Codex app-server exited with code ${code}`)));
-    readline.createInterface({ input: this.process.stdout }).on("line", (line) => this.#receive(line));
+    this.process = child;
+    child.stderr.on("data", (chunk) => process.stderr.write(chunk));
+    child.on("exit", (code) => { if (this.process === child) this.process = null; this.#rejectAll(new Error(`Codex app-server exited with code ${code}`)); });
+    readline.createInterface({ input: child.stdout }).on("line", (line) => this.#receive(line));
 
     await this.#request("initialize", {
       clientInfo: { name: "vohk_one_linear_analyst", title: "Analista ONE", version: "0.1.0" },
