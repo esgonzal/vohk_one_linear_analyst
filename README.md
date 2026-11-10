@@ -30,6 +30,8 @@ npm run check
 npm test
 ```
 
+Set `TEST_DATABASE_URL` to include the PostgreSQL integration test; otherwise that single test is skipped. GitHub Actions provisions PostgreSQL and runs it automatically.
+
 ## Configuration
 
 Copy `.env.example` to `.env` outside source control and provide a PostgreSQL database. Generate `CREDENTIAL_ENCRYPTION_KEY` as 32 random bytes encoded with base64 and keep it in the deployment secret store. Losing it makes stored OAuth tokens unreadable.
@@ -59,4 +61,8 @@ The old Analista/Arquitecto/QA/Documentador applications remain untouched until 
 ## Security boundary
 
 The analyst receives issue/session text only. Its Codex thread uses a dedicated empty working directory, read-only sandboxing, disabled network access, and `approvalPolicy=never`. The model is required to return either a clarification request or a final functional specification matching a JSON schema.
+
+## License
+
+MIT. See `LICENSE`.
 
