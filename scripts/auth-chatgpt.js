@@ -6,7 +6,14 @@ import { ChatGptOAuth } from "../src/oauth/chatgpt.js";
 const config = loadConfig(); const pool = createPool(config.databaseUrl, config.databaseSsl);
 try {
   const repository = new ChatGptCredentialRepository(pool, new CredentialCrypto(config.encryptionKey));
-  const result = await new ChatGptOAuth({ repository }).authorizeInteractively();
+  const headless = process.env.CHATGPT_AUTH_HEADLESS === "true";
+  const callbackPort = Number(process.env.CHATGPT_AUTH_CALLBACK_PORT ?? 0);
+  const result = await new ChatGptOAuth({
+    repository,
+    dataDirectory: process.env.CHATGPT_AUTH_DATA_DIR,
+    callbackPort,
+    openBrowserImpl: headless ? (url) => console.log(`Open this URL to authorize ChatGPT:\n${url}`) : undefined,
+  }).authorizeInteractively();
   console.log(`Authorized ChatGPT account ${result.email ?? "(email unavailable)"}.`);
 } finally { await pool.end(); }
 

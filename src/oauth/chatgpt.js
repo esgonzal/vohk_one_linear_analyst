@@ -10,7 +10,9 @@ const RESOURCE = "https://api.openai.com/v1";
 const SCOPE = "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct";
 
 export class ChatGptOAuth {
-  constructor({ repository, dataDirectory = path.resolve(".data"), fetchImpl = fetch }) { Object.assign(this, { repository, dataDirectory, fetchImpl }); }
+  constructor({ repository, dataDirectory = path.resolve(".data"), fetchImpl = fetch, callbackPort = 0, openBrowserImpl = openBrowser }) {
+    Object.assign(this, { repository, dataDirectory, fetchImpl, callbackPort, openBrowserImpl });
+  }
 
   async authorizeInteractively() {
     const hostId = await this.#hostId(); const state = crypto.randomBytes(32).toString("base64url");
@@ -21,7 +23,7 @@ export class ChatGptOAuth {
     url.search = new URLSearchParams({ client_id: "dynamic_agent_client", agent_name_hint: "vohk_one_linear_analyst",
       ext_agent_host_id: hostId, response_type: "code", redirect_uri: callback.redirectUri, scope: SCOPE, resource: RESOURCE,
       state, nonce, code_challenge_method: "S256", code_challenge: challenge }).toString();
-    openBrowser(url.toString());
+    this.openBrowserImpl(url.toString());
     const result = await callback.result;
     if (result.state !== state || result.error) throw new Error(result.error ?? "Invalid ChatGPT OAuth state");
     if (!result.code || !result.client_id) throw new Error("ChatGPT registration did not return code and issued client_id");
@@ -57,7 +59,7 @@ export class ChatGptOAuth {
   async #listen() {
     let resolve; const result = new Promise((done) => { resolve = done; });
     const server = http.createServer((request, response) => { const url = new URL(request.url, "http://127.0.0.1"); if (url.pathname !== "/auth/callback") { response.writeHead(404).end(); return; } const values = Object.fromEntries(url.searchParams); response.writeHead(200, { "content-type": "text/plain; charset=utf-8" }); response.end("Analista ONE autorizado. Puedes cerrar esta ventana."); server.close(); resolve(values); });
-    await new Promise((done) => server.listen(0, "127.0.0.1", done)); const address = server.address();
+    await new Promise((done) => server.listen(this.callbackPort, "127.0.0.1", done)); const address = server.address();
     return { redirectUri: `http://127.0.0.1:${address.port}/auth/callback`, result };
   }
 }
