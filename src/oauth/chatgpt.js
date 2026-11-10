@@ -51,8 +51,17 @@ export class ChatGptOAuth {
 
   async #hostId() {
     const file = path.join(this.dataDirectory, "chatgpt-host-id");
-    try { return (await fs.readFile(file, "utf8")).trim(); } catch (error) { if (error.code !== "ENOENT") throw error; }
-    await fs.mkdir(this.dataDirectory, { recursive: true }); const value = crypto.randomUUID(); await fs.writeFile(file, value, { mode: 0o600 }); return value;
+    try {
+      const stored = (await fs.readFile(file, "utf8")).trim();
+      if (stored.startsWith("urn:uuid:")) return stored;
+      const normalized = `urn:uuid:${stored}`;
+      await fs.writeFile(file, normalized, { mode: 0o600 });
+      return normalized;
+    } catch (error) { if (error.code !== "ENOENT") throw error; }
+    await fs.mkdir(this.dataDirectory, { recursive: true });
+    const value = `urn:uuid:${crypto.randomUUID()}`;
+    await fs.writeFile(file, value, { mode: 0o600 });
+    return value;
   }
   async #discovery() { const response = await this.fetchImpl(`${AUTH_BASE}/.well-known/openid-configuration`); if (!response.ok) throw new Error("Unable to load OpenAI OIDC configuration"); return response.json(); }
   async #exchange(params) { const discovery = await this.#discovery(); const response = await this.fetchImpl(discovery.token_endpoint, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(params) }); const body = await response.json(); if (!response.ok) throw new Error(`ChatGPT OAuth failed: ${body.error_description ?? body.error}`); return body; }
