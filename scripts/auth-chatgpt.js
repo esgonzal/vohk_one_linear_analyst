@@ -3,7 +3,7 @@ import { CredentialCrypto } from "../src/credential-crypto.js";
 import { createPool } from "../src/database.js";
 import { ChatGptCredentialRepository } from "../src/repositories.js";
 import { ChatGptOAuth } from "../src/oauth/chatgpt.js";
-const config = loadConfig(); const pool = createPool(config.databaseUrl);
+const config = loadConfig(); const pool = createPool(config.databaseUrl, config.databaseSsl);
 try {
   const repository = new ChatGptCredentialRepository(pool, new CredentialCrypto(config.encryptionKey));
   const result = await new ChatGptOAuth({ repository }).authorizeInteractively();

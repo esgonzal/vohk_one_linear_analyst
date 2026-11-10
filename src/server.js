@@ -15,7 +15,7 @@ import { WebhookWorker } from "./webhook-worker.js";
 
 const config = loadConfig();
 if (!config.publicBaseUrl || !config.linear.clientId || !config.linear.clientSecret || !config.linear.webhookSecret) throw new Error("PUBLIC_BASE_URL and all LINEAR_* settings are required");
-const pool = createPool(config.databaseUrl); const credentialCrypto = new CredentialCrypto(config.encryptionKey);
+const pool = createPool(config.databaseUrl, config.databaseSsl); const credentialCrypto = new CredentialCrypto(config.encryptionKey);
 const installations = new InstallationRepository(pool, credentialCrypto); const states = new OAuthStateRepository(pool, credentialCrypto);
 const linearOAuth = new LinearOAuth({ clientId: config.linear.clientId, clientSecret: config.linear.clientSecret, redirectUri: `${config.publicBaseUrl}/auth/linear/callback`, states, installations });
 const chatGptOAuth = new ChatGptOAuth({ repository: new ChatGptCredentialRepository(pool, credentialCrypto) });

@@ -37,6 +37,8 @@ Set `TEST_DATABASE_URL` to include the PostgreSQL integration test; otherwise th
 
 Copy `.env.example` to `.env` outside source control and provide a PostgreSQL database. Generate `CREDENTIAL_ENCRYPTION_KEY` as 32 random bytes encoded with base64 and keep it in the deployment secret store. Losing it makes stored OAuth tokens unreadable.
 
+`DATABASE_SSL_REJECT_UNAUTHORIZED` defaults to certificate verification. Set it to `false` only for a managed database whose private certificate chain cannot be validated by the host, and keep that exception scoped to PostgreSQL; never use a global TLS bypass.
+
 Apply the schema before starting:
 
 ```powershell

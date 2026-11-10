@@ -6,7 +6,9 @@ export function loadConfig(env = process.env) {
   if (encryptionKey.length !== 32) throw new Error("CREDENTIAL_ENCRYPTION_KEY must be a base64-encoded 32-byte key");
   return {
     port: Number(env.PORT ?? 8787), publicBaseUrl: env.PUBLIC_BASE_URL?.replace(/\/$/, ""),
-    databaseUrl: env.DATABASE_URL, encryptionKey,
+    databaseUrl: env.DATABASE_URL,
+    databaseSsl: env.DATABASE_SSL_REJECT_UNAUTHORIZED === "false" ? { rejectUnauthorized: false } : undefined,
+    encryptionKey,
     linear: { clientId: env.LINEAR_CLIENT_ID, clientSecret: env.LINEAR_CLIENT_SECRET, webhookSecret: env.LINEAR_WEBHOOK_SECRET },
     codex: { command: env.CODEX_COMMAND ?? "codex", model: env.CODEX_MODEL || undefined, useExistingLogin: env.USE_EXISTING_CODEX_LOGIN === "true" },
   };
